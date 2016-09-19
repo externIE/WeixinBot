@@ -788,6 +788,8 @@ class WebWeixin(object):
                     ans = EXBOT.calcAnswer(content)
                     if ans == None :
                         ans = self._xiaodoubi(content)
+                    if name == '精码门':
+                        debugInfo = '\n工号9527为您服务:\n【%s:%s】'%(memberName, content,)
                     ans = ans + debugInfo
                     if self.webwxsendmsg(ans, msg['FromUserName']):
                         print '自动回复成功: ' + ans
@@ -899,7 +901,7 @@ class WebWeixin(object):
                     r = self.webwxsync()
                 elif selector == '0':
                     time.sleep(0.5) #正常状态
-            if (time.time() - self.lastCheckTs) <= 1:
+            if (time.time() - self.lastCheckTs) <= self.TimeOut:
                 time.sleep(time.time() - self.lastCheckTs)
             print 'roll call cost time:%fs'%(time.time() - self.lastCheckTs,);
 
