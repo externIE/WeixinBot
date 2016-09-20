@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 import os
+import json
 
 def calcAnswer(content):
 	answer = None
@@ -46,66 +47,73 @@ class EXBOT(object):
 	Status_XiaZhu 		= 2
 	Status_QiangBao 	= 3
 
-	def __init__(self, groupid, groupname, admin, weixin):
+	def __init__(self, groupid, groupname, admin, adminname, weixin):
 		self.groupid = groupid
 		self.groupname = groupname
 		self.admin = admin
+		self.adminname = adminname
 		self.weixin = weixin
 		self.qiangzhuangtimelimit = 20
 		self.xiazhutimelimit = 20
 		self.qiangbaotimelimit = 20
-		self.status = Status_White
+		self.status = EXBOT.Status_White
 		self.loadConfig()
 
 	def __str__(self):
 		description = \
-            "=========================\n" + \
-            "[#] 我是［" + str(self.groupname) + "］群的管理员\n"\
-            "========================="
-        return description
+		"=========================\n"\
+		"[#] 我是［" + str(self.groupname) + "］群的机器人\n"\
+		"[#] 该群的管理员是［" + str(self.adminname) + "］\n"\
+		"========================="
+		return description
 
-    def loadConfig(self):
-    	filename = 'config.json'
-    	dirname = os.path.join(os.getcwd(), 'config')
-    	fn = os.path.join(dirname, filename)
-    	with open(fn, 'r') as file:
-    		config = json.load(f, object_hook=_decode_dict)
-    	self.qiangzhuangtimelimit = config["QiangZhuangTimeLimit"]
-    	self.xiazhutimelimit = config["XiaZhuTimeLimit"]
-    	self.qiangbaotimelimit = config["QiangBaoTimeLimit"]
+	def loadConfig(self):
+		filename = 'config.json'
+		dirname = os.path.join(os.getcwd(), 'config')
+		fn = os.path.join(dirname, filename)
+		with open(fn, 'r') as file:
+			config = json.load(file, object_hook=_decode_dict)
+		self.qiangzhuangtimelimit = config["QiangZhuangTimeLimit"]
+		self.xiazhutimelimit = config["XiaZhuTimeLimit"]
+		self.qiangbaotimelimit = config["QiangBaoTimeLimit"]
+		self.newbouttip = config["NewBoutTip"]
 
-    def setStatus(self, status):
-    	self.status = status
+	def setStatus(self, status):
+		self.status = status
 
     #向自己管理的组里面发送消息
-    def sendMsgToMyGroup(self, text):
-    	weixin = self.weixin
-    	if not weixin :
-    		print '[error!] connector is none'
-    		return
-    	return weixin.webwxsendmsg(text, self.groupid)
+	def sendMsgToMyGroup(self, text):
+		weixin = self.weixin
+		if not weixin :
+			print '[error!] connector is none'
+			return
+		return weixin.webwxsendmsg(text, self.groupid)
 
-    def parseMsgContent(self, content):
-    	li = content.split(':<br/>')
-        fromUserName = li[0]
-        msgContent = li[1]
-        return fromUserName, msgContent
+	def parseMsgContent(self, content):
+		li = content.split(':<br/>')
+		fromUserName = li[0]
+		msgContent = li[1]
+		return fromUserName, msgContent
 
-    def parseMsg(self, msg):
-    	content = msg['Content'].replace('&lt;', '<').replace('&gt;', '>')
-    	memberID, memberSay = self.parseMsgContent(content)
-    	memberName = self.weixin.getUserRemarkName(memberID)
-    	return memberID, memberName, memberSay
+	def parseMsg(self, msg):
+		content = msg['Content'].replace('&lt;', '<').replace('&gt;', '>')
+		memberID, memberSay = self.parseMsgContent(content)
+		memberName = self.weixin.getUserRemarkName(memberID)
+		return memberID, memberName, memberSay
 
-    def startGame(self):
-    	
+	def startGame(self):
+		#发送新局消息
+		template = self.newbouttip
+		text = template%(self.adminname, self.qiangzhuangtimelimit)
+		self.sendMsgToMyGroup(text)
 
     #处理消息
-    def handleMsg(self, msg):
-    	if msg['FromUserName'] != self.groupid:
-    		#丢弃不是自己管理的消息
-    		return
-    	weixin = self.weixin
-    	memberID, memberName, memberSay = self.parseMsg(msg)
-    	if memberID == self.admin and memberSay == '开始游戏' :
-    		self.startGame()
+	def handleMsg(self, msg):
+		if msg['FromUserName'] != self.groupid:
+			#丢弃不是自己管理的消息
+			return False
+		weixin = self.weixin
+		memberID, memberName, memberSay = self.parseMsg(msg)
+		if memberID == self.admin and memberSay == '开始游戏' :
+			self.startGame()
+		return True

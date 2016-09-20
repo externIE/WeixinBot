@@ -126,6 +126,8 @@ class WebWeixin(object):
 
         self.noReplyGroupList = []
         self.noReplyContactList = []
+        self.gameGroupList = []
+        self.exBotList = []
 
 #         self.cookie = cookielib.CookieJar()
 #         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cookie))
@@ -152,6 +154,8 @@ class WebWeixin(object):
             self.noReplyGroupList = config['NoReplyGroupList']
         if config['NoReplyContactList']:
             self.noReplyContactList = config['NoReplyContactList']
+        if config['GameGroupList']:
+            self.gameGroupList = config['GameGroupList']
         return True
 
 
@@ -324,6 +328,24 @@ class WebWeixin(object):
             for member in MemberList:
                 self.GroupMemeberList.append(member)
         return True
+
+    def createExBots(self):
+        for group in self.GroupList:
+            for gamegroup in self.gameGroupList:
+                if group['NickName'] == gamegroup['GroupName']:
+                    groupID = group['UserName']
+                    groupName = group['NickName']
+                    adminName = gamegroup['Admin']
+                    adminID = self.getUSerID(adminName)
+                    exBot = EXBOT.EXBOT(groupID,groupName,adminID,adminName,self)
+                    self.exBotList.append(exBot)
+                    print '为群＊%s＊创建一个机器人,管理员为*%s*\n'%(groupName,adminName)
+        return True
+
+    def pushMsgToExBots(self, msg):
+        for exbot in self.exBotList:
+            if exbot.handleMsg(msg):
+                return True
 
     def getNameById(self, id):
         url = self.base_uri + \
@@ -754,7 +776,9 @@ class WebWeixin(object):
         for msg in r['AddMsgList']:
             print '[*] 你有新的消息，请注意查收'
             logging.debug('[*] 你有新的消息，请注意查收')
-
+            if self.pushMsgToExBots(msg):
+                print '[*] 游戏机器人已经处理该消息'
+                return
             # if self.DEBUG:
             #     fn = 'msg' + str(int(random.random() * 1000)) + '.json'
             #     with open(fn, 'w') as f:
@@ -982,11 +1006,10 @@ class WebWeixin(object):
         self._run('[*] 获取联系人 ... ', self.webwxgetcontact)
         self._echo('[*] 应有 %s 个联系人，读取到联系人 %d 个' %
                    (self.MemberCount, len(self.MemberList)))
-        print
-        self._echo('[*] 共有 %d 个群 | %d 个直接联系人 | %d 个特殊账号 ｜ %d 公众号或服务号' % (len(self.GroupList),
-                                                                         len(self.ContactList), len(self.SpecialUsersList), len(self.PublicUsersList)))
-        print
+        self._echo('[*] 共有 %d 个群 | %d 个直接联系人 | %d 个特殊账号 ｜ %d 公众号或服务号' % (len(self.GroupList),len(self.ContactList), len(self.SpecialUsersList), len(self.PublicUsersList)))
+
         self._run('[*] 获取群 ... ', self.webwxbatchgetcontact)
+        self._run('[*] 正在为游戏群创建机器人 ...',self.createExBots)
         logging.debug('[*] 微信网页版 ... 开动')
         if self.DEBUG:
             print self
