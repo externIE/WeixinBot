@@ -81,6 +81,9 @@ class EXBOT(object):
 	def setStatus(self, status):
 		self.status = status
 
+	def isStatus(self, status):
+		return self.status == status
+
     #向自己管理的组里面发送消息
 	def sendMsgToMyGroup(self, text):
 		weixin = self.weixin
@@ -105,7 +108,11 @@ class EXBOT(object):
 		#发送新局消息
 		template = self.newbouttip
 		text = template%(self.adminname, self.qiangzhuangtimelimit)
-		self.sendMsgToMyGroup(text)
+		if self.sendMsgToMyGroup(text):
+			self.setStatus(Status_QiangZhuang)
+		else:
+			print '[error!] 发送开始消息失败,正在重新发送...'
+			self.startGame()
 
     #处理消息
 	def handleMsg(self, msg):
@@ -114,6 +121,10 @@ class EXBOT(object):
 			return False
 		weixin = self.weixin
 		memberID, memberName, memberSay = self.parseMsg(msg)
-		if memberID == self.admin and memberSay == '开始游戏' :
-			self.startGame()
+		memberSay = memberSay.strip()
+		if self.isStatus(Status_White):
+			if memberID == self.admin and memberSay == '开始游戏' :
+				self.startGame()
+		elif self.isStatus(Status_QiangZhuang):
+			return False
 		return True
