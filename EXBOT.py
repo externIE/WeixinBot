@@ -57,7 +57,11 @@ class EXBOT(object):
 		self.xiazhutimelimit = 20
 		self.qiangbaotimelimit = 20
 		self.status = EXBOT.Status_White
+
+		self.qzPlayerList = []
+
 		self.loadConfig()
+		self.loadPlayerInfo()
 
 	def __str__(self):
 		description = \
@@ -76,7 +80,20 @@ class EXBOT(object):
 		self.qiangzhuangtimelimit = config["QiangZhuangTimeLimit"]
 		self.xiazhutimelimit = config["XiaZhuTimeLimit"]
 		self.qiangbaotimelimit = config["QiangBaoTimeLimit"]
-		self.newbouttip = config["NewBoutTip"]
+		self.newbouttip = config["新局提示"]
+		self.playersScoreTable = 
+
+	def loadPlayerInfo(self):
+		filename = 'playerinfo.json'
+		dirname = os.path.join(os.getcwd(), 'playerinfo')
+		fn = os.path.join(dirname, filename)
+		with open(fn, 'r') as file:
+			config = json.load(file, object_hook=_decode_dict)
+		self.playersinfo = config
+		self.playersName = []
+		for index, playerinfo in enumerate(self.playersinfo):
+			self.playersName.append(playerinfo.name)
+
 
 	def setStatus(self, status):
 		self.status = status
@@ -104,6 +121,16 @@ class EXBOT(object):
 		memberName = self.weixin.getUserRemarkName(memberID)
 		return memberID, memberName, memberSay
 
+	def getPlayerScoreByName(self, name):
+		for index, playerinfo in enumerate(self.playersinfo):
+			if playerinfo.name == name:
+				return playerinfo.score
+			else:
+				return 0
+
+	def sendPlayersScore(self):
+		template = self.
+
 	def startGame(self):
 		#发送新局消息
 		template = self.newbouttip
@@ -114,6 +141,15 @@ class EXBOT(object):
 			print '[error!] 发送开始消息失败,正在重新发送...'
 			self.startGame()
 
+	def handleQiangZhuang(self, memberID, memberName, memberSay):
+		if memberSay.isdigit() and int(memberSay) <= self.getPlayerScoreByName(memberName):
+			if memberName not in self.qzPlayerList.keys():
+				self.qzPlayerList[memberName] = int(memberSay)
+			else:
+				self.qzPlayerList[memberName] = self.qzPlayerList[memberName] if self.qzPlayerList[memberName] > int(memberSay) else int(memberSay)
+		if memberSay == '取消':
+			if memberName in self.qzPlayerList.keys():
+				self.qzPlayerList.pop(memberName)
     #处理消息
 	def handleMsg(self, msg):
 		if msg['FromUserName'] != self.groupid:
@@ -122,9 +158,12 @@ class EXBOT(object):
 		weixin = self.weixin
 		memberID, memberName, memberSay = self.parseMsg(msg)
 		memberSay = memberSay.strip()
+		if memberName in self.playersName:
+			#丢弃不在玩家列表中的人的消息
+			return False
 		if self.isStatus(Status_White):
 			if memberID == self.admin and memberSay == '开始游戏' :
 				self.startGame()
 		elif self.isStatus(Status_QiangZhuang):
-			return False
+			self.handleQiangZhuang(memberID, memberName, memberSay)
 		return True
