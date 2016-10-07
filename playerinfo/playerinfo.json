@@ -1,5 +1,7 @@
-[
-	{"name":"externIE","score":500},
-	{"name":"施海健","score":400},
-	{"name":"谢星华","score":200},
-]
+{
+	"playersinfo":[
+		{"name":"externIE","score":500},
+		{"name":"施海健","score":400},
+		{"name":"谢星华","score":200}
+	]
+}
