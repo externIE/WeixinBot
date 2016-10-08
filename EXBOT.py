@@ -40,14 +40,14 @@ def _decode_dict(data):
             value = _decode_dict(value)
         rv[key] = value
     return rv
-
+Status_White 		= 0
+Status_QiangZhuang 	= 1
+Status_XiaZhu 		= 2
+Status_QiangBao 	= 3
+Status_Wait         = 4
 #游戏管理机器人,处理某个群的群消息
 class EXBOT(object):
-	Status_White 		= 0
-	Status_QiangZhuang 	= 1
-	Status_XiaZhu 		= 2
-	Status_QiangBao 	= 3
-	Status_Wait         = 4
+	
 
 	def __init__(self, groupid, groupname, admin, adminname, weixin):
 		self.groupid = groupid
@@ -58,7 +58,7 @@ class EXBOT(object):
 		self.qiangzhuangtimelimit = 20
 		self.xiazhutimelimit = 20
 		self.qiangbaotimelimit = 20
-		self.status = EXBOT.Status_White
+		self.status = Status_White
 
 		self.qzPlayerList = []
 		self.xzPlayerList = []
@@ -267,6 +267,7 @@ class EXBOT(object):
 		template = self.tpEndFBTip
 		text = template%(self.adminname, )
 		if self.sendMsgToMyGroup(text):
+			pass
 		else:
 			print '[error!] 发送开始消息失败,正在重新发送...'
 			self.endFB()
@@ -275,7 +276,38 @@ class EXBOT(object):
 		#发送结果
 		self.calcType()
 		self.buildResult()
-		
+		self.restorePlayersScore()
+		normalResults = ""
+		for name, bl in enumerate(self.blPlayerList):
+			strName = name
+			strZX = "庄" if name == self.zPlayerName else "闲"
+			strDS = str(self.dsPlayerList[name])
+			strType = self.typePlayerList[name]
+			strBL = str(self.blPlayerList[name])
+			strDiff = str(self.diffPlayerList[name])
+			strScore = self.getPlayerScoreByName(name)
+			normalResults += self.tpNPRez%(strName,strZX,strDS,strType,strBL,strDiff,strScore)
+
+		abortResults = ""
+		for name, xzScore in enumerate(self.xzPlayerList):
+			#看看谁下注但没有抢包
+			if name not in self.blPlayerList.keys():
+				strName = name
+				strZX = "庄" if name == self.zPlayerName else "闲"
+				strDS = "*"
+				strType = "*"
+				strBL = "*"
+				strDiff = str(self.diffPlayerList[name])
+				strScore = self.getPlayerScoreByName(name)
+				abortResults += self.tpFPRez%(strName,strZX,strDS,strType,strBL,strDiff,strScore)
+
+		template = self.tpRez
+		text = template%(self.normalResults, self.abortResults)
+		if self.sendMsgToMyGroup(text):
+			pass
+		else:
+			print '[error!] 发送开始消息失败,正在重新发送...'
+			self.showResult()
 
 	def initData(self):
 		pass
@@ -320,7 +352,8 @@ class EXBOT(object):
 				ret = self.parseRedBaoProfile(memberSay)
 				if ret :
 					self.waitForRedBaoProfile = False
-				else ret :
+					self.setStatus(Status_White)
+				else :
 					return
 		else:
 			return
@@ -358,6 +391,8 @@ class EXBOT(object):
 	def buildResult(self):
 		zBL = self.blPlayerList[self.zPlayerName]
 		zPlayerName = self.zPlayerName
+		self.diffPlayerList = {}
+		self.diffPlayerList[zPlayerName] = 0
 		for name, bl in enumerate(self.blPlayerList):
 			#这一次循环先把所有输的闲家的钱收过来
 			if zPlayerName == name :
@@ -367,6 +402,18 @@ class EXBOT(object):
 				xzScore = self.xzPlayerList[name]
 				self.setPlayerDiffScoreByName(zPlayerName, xzScore*zBL)
 				self.setPlayerDiffScoreByName(name, -xzScore*zBL)
+				self.diffPlayerList[name] = -xzScore*zBL
+				self.diffPlayerList[zPlayerName] += xzScore*zBL
+
+
+		for name, xzScore in enumerate(self.xzPlayerList):
+			#看看谁下注但没有抢包
+			if name not in self.blPlayerList.keys():
+				#按庄家的倍率赔
+				self.setPlayerDiffScoreByName(zPlayerName, xzScore*zBL)
+				self.setPlayerDiffScoreByName(name, -xzScore*zBL)
+				self.diffPlayerList[name] = -xzScore*zBL
+				self.diffPlayerList[zPlayerName] += xzScore*zBL
 
 		xjWinTotal = 0
 		xjWin = {}
@@ -379,6 +426,10 @@ class EXBOT(object):
 				xzScore = self.xzPlayerList[name]
 				self.setPlayerDiffScoreByName(zPlayerName, -xzScore*bl)
 				self.setPlayerDiffScoreByName(name, xzScore*bl)
+
+				self.diffPlayerList[name] = xzScore*zBL
+				self.diffPlayerList[zPlayerName] += -xzScore*zBL
+
 				xjWin[name] = xzScore*bl
 				xjWinTotal += xzScore*bl
 
@@ -386,14 +437,17 @@ class EXBOT(object):
 			#如果发现庄家的钱小于零，说明不够赔，那么闲家应该吃水
 			diffScore = self.getPlayerScoreByName(zPlayerName)
 			self.setPlayerDiffScoreByName(zPlayerName, -diffScore)
+			self.diffPlayerList[zPlayerName] += -diffScore
 			for name, bl in enumerate(self.blPlayerList):
 				#这一次循环庄家赔钱
 				if zPlayerName == name :
 					continue
 				if bl > zBL :
-					#庄家赔
+					#多余的钱应该补回给闲家
 					xzScore = self.xzPlayerList[name]
 					self.setPlayerDiffScoreByName(name, diffScore*xjWin[name]*xjWinTotal)
+					self.diffPlayerList[name] += diffScore*xjWin[name]*xjWinTotal
+
 
 
 	def splitScore(self, score):
@@ -457,13 +511,16 @@ class EXBOT(object):
 		if msg['FromUserName'] != self.groupid:
 			#丢弃不是自己管理的消息
 			return False
+		print 'Robot Catch Msg'
 		weixin = self.weixin
 		memberID, memberName, memberSay = self.parseMsg(msg)
 		memberSay = memberSay.strip()
 		if memberName in self.playersName:
 			#丢弃不在玩家列表中的人的消息
-			return False
-		if memberID = self.admin and memberSay == '结束游戏' :
+			print memberName, "不在游戏中..."
+			print '全部成员', self.playersName
+			return True
+		if memberID == self.admin and memberSay == '结束游戏' :
 			self.stopTimeLine()
 
 		if self.isStatus(Status_White):

@@ -776,9 +776,9 @@ class WebWeixin(object):
         for msg in r['AddMsgList']:
             print '[*] 你有新的消息，请注意查收'
             logging.debug('[*] 你有新的消息，请注意查收')
-            # if self.pushMsgToExBots(msg):
-            #     print '[*] 游戏机器人已经处理该消息'
-            #     return
+            if self.pushMsgToExBots(msg):
+                print '[*] 游戏机器人已经处理该消息'
+                return
 
             
             # if self.DEBUG:
@@ -1011,7 +1011,7 @@ class WebWeixin(object):
         self._echo('[*] 共有 %d 个群 | %d 个直接联系人 | %d 个特殊账号 ｜ %d 公众号或服务号' % (len(self.GroupList),len(self.ContactList), len(self.SpecialUsersList), len(self.PublicUsersList)))
 
         self._run('[*] 获取群 ... ', self.webwxbatchgetcontact)
-        # self._run('[*] 正在为游戏群创建机器人 ...',self.createExBots)
+        self._run('[*] 正在为游戏群创建机器人 ...',self.createExBots)
         logging.debug('[*] 微信网页版 ... 开动')
         if self.DEBUG:
             print self

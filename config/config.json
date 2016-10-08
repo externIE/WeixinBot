@@ -6,7 +6,7 @@
 	"autoOpen":"False",
 	"NoReplyGroupList":["畅唐租房群","亲亲","公共棋牌业务部"],
 	"NoReplyContactList":["回忆","晨光","林"],
-	"GameGroupList":[{"GroupName":"林娇娇", "Admin":"测试账号"}],
+	"GameGroupList":[{"GroupName":"林娇娇", "Admin":"externIE"}],
 
 	"QiangZhuangTimeLimit":20,
 	"XiaZhuTimeLimit":20,
@@ -41,7 +41,7 @@
 
 	"抢包人":"%s[%s] | %s | %s | %s | %s | %s\n",
 
-	"未抢包人":"%s\n",
+	"未抢包人":"%s[%s] | %s | %s | %s | %s | %s\n",
 
-	"结束游戏提示":"[!]游戏将在下一轮开始前结束",
+	"结束游戏提示":"[!]游戏将在下一轮开始前结束"
 }
