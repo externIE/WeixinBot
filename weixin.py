@@ -121,7 +121,7 @@ class WebWeixin(object):
         self.memberCount = 0
         self.SpecialUsers = ['newsapp', 'fmessage', 'filehelper', 'weibo', 'qqmail', 'fmessage', 'tmessage', 'qmessage', 'qqsync', 'floatbottle', 'lbsapp', 'shakeapp', 'medianote', 'qqfriend', 'readerapp', 'blogapp', 'facebookapp', 'masssendapp', 'meishiapp', 'feedsapp',
                              'voip', 'blogappweixin', 'weixin', 'brandsessionholder', 'weixinreminder', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c', 'officialaccounts', 'notification_messages', 'wxid_novlwrv3lqwv11', 'gh_22b87fa7cb3c', 'wxitil', 'userexperience_alarm', 'notification_messages']
-        self.TimeOut = 20  # 同步最短时间间隔（单位：秒）
+        self.TimeOut = 1  # 同步最短时间间隔（单位：秒）
         self.media_count = -1
 
         self.noReplyGroupList = []
@@ -410,9 +410,9 @@ class WebWeixin(object):
             'rr': ~int(time.time())
         }
         dic = self._post(url, params)
-        if self.DEBUG:
-            print json.dumps(dic, indent=4)
-            logging.debug(json.dumps(dic, indent=4))
+        # if self.DEBUG:
+        #     print json.dumps(dic, indent=4)
+        #     logging.debug(json.dumps(dic, indent=4))
 
         if dic['BaseResponse']['Ret'] == 0:
             self.SyncKey = dic['SyncKey']
@@ -1017,19 +1017,16 @@ class WebWeixin(object):
             print self
         logging.debug(self)
 
-        if self.interactive and raw_input('[*] 是否开启自动回复模式(y/n): ') == 'y':
-            self.autoReplyMode = True
-            print '[*] 自动回复模式 ... 开启'
-            logging.debug('[*] 自动回复模式 ... 开启')
-        else:
-            print '[*] 自动回复模式 ... 关闭'
-            logging.debug('[*] 自动回复模式 ... 关闭')
+        # if self.interactive and raw_input('[*] 是否开启自动回复模式(y/n): ') == 'y':
+        #     self.autoReplyMode = True
+        #     print '[*] 自动回复模式 ... 开启'
+        #     logging.debug('[*] 自动回复模式 ... 开启')
+        # else:
+        #     print '[*] 自动回复模式 ... 关闭'
+        #     logging.debug('[*] 自动回复模式 ... 关闭')
 
-        print 'before Start'
         listenProcess = multiprocessing.Process(target=self.listenMsgMode)
         listenProcess.start()
-        print 'after Start'
-
         while True:
             text = raw_input('')
             if text == 'quit':
@@ -1078,8 +1075,9 @@ class WebWeixin(object):
         else:
             print('失败\n[*] 退出程序')
             logging.debug('%s... 失败' % (str))
-            logging.debug('[*] 退出程序')
-            exit()
+            logging.debug('[*] 正在重试...')
+            self._run(str, func, *args)
+            # exit()
 
     def _echo(self, str):
         sys.stdout.write(str)
@@ -1118,6 +1116,9 @@ class WebWeixin(object):
         try:
             response = urllib2.urlopen(request)
         except urllib2.HTTPError,e:
+            print url+'cannot get!!!',e
+            return None
+        except IOError, httplib.HTTPException:
             print url+'cannot get!!!',e
             return None
         data = response.read()
