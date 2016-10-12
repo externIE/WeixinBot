@@ -107,7 +107,7 @@ class WebWeixin(object):
         self.PublicUsersList = []  # 公众号／服务号
         self.SpecialUsersList = []  # 特殊账号
         self.autoReplyMode = True
-        self.syncHost = ''
+        self.syncHost = 'webpush.weixin.qq.com'
         self.user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.109 Safari/537.36'
         self.interactive = True
         self.autoOpen = False
@@ -369,7 +369,12 @@ class WebWeixin(object):
             'webpush1.wechat.com',
             'webpush2.wechat.com',
             # 'webpush1.wechatapp.com',
-            # 'webpush.wechatapp.com'
+            # 'webpush.wechatapp.com',
+            'webpush.web.wechat.com',
+            'webpush.web2.wechat.com',
+            'web1.wechat.com',
+            'web2.wechat.com',
+            'web.wechat.com'
         ]
         for host in SyncHost:
             self.syncHost = host
