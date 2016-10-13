@@ -16,6 +16,7 @@ import random
 import multiprocessing
 import platform
 import logging
+import httplib
 import EXBOT
 from collections import defaultdict
 from urlparse import urlparse
@@ -195,7 +196,8 @@ class WebWeixin(object):
 
     def waitForLogin(self, tip=1):
         time.sleep(tip)
-        url = 'https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?tip=%s&uuid=%s&_=%s' % (
+        #https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?tip=%s&uuid=%s&_=%s
+        url = 'https://login.wx.qq.com/cgi-bin/mmwebwx-bin/login?tip=%s&uuid=%s&_=%s' % (
             tip, self.uuid, int(time.time()))
         data = self._get(url)
         pm = re.search(r'window.code=(\d+);', data)
@@ -363,8 +365,14 @@ class WebWeixin(object):
 
     def testsynccheck(self):
         SyncHost = [
+            'webpush.wx.qq.com',
+            'webpush.wx2.qq.com',
+            'webpush2.wx.qq.com',
+            'webpush2.wx2.qq.com',
             'webpush.weixin.qq.com',
             'webpush2.weixin.qq.com',
+            'webpush.weixin2.qq.com',
+            'webpush2.weixin2.qq.com',
             'webpush.wechat.com',
             'webpush1.wechat.com',
             'webpush2.wechat.com',
@@ -379,6 +387,7 @@ class WebWeixin(object):
         for host in SyncHost:
             self.syncHost = host
             [retcode, selector] = self.synccheck()
+            print 'retcode:',retcode,' selector:',selector
             if retcode == '0':
                 return True
         return False
@@ -396,6 +405,7 @@ class WebWeixin(object):
         url = 'https://' + self.syncHost + \
             '/cgi-bin/mmwebwx-bin/synccheck?' + urllib.urlencode(params)
         data = self._get(url)
+        # print url
         if data == None:
             print 'synccheck error and try again!!!'
             return [-1, -1]
@@ -1124,7 +1134,7 @@ class WebWeixin(object):
             print url+'cannot get!!!',e
             return None
         except IOError, httplib.HTTPException:
-            print url+'cannot get!!!',e
+            print url+'cannot get!!!'
             return None
         data = response.read()
         logging.debug(url)
